@@ -8,7 +8,7 @@ namespace libwebrtc {
 
 VideoSinkAdapter::VideoSinkAdapter(
     rtc::scoped_refptr<webrtc::VideoTrackInterface> track)
-    : rtc_track_(track), crt_sec_(new rtc::CriticalSection()) {
+    : rtc_track_(track), crt_sec_(new rtc::RecursiveCriticalSection()) {
   rtc_track_->AddOrUpdateSink(this, rtc::VideoSinkWants());
   RTC_LOG(INFO) << __FUNCTION__ << ": ctor " << (void*)this;
 }

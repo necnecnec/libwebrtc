@@ -10,8 +10,8 @@ class RTCMediaConstraints : public RefCountInterface {
   // These keys are google specific.
   LIB_WEBRTC_API static const char* kGoogEchoCancellation;  // googEchoCancellation
 
-  LIB_WEBRTC_API static const char* kExtendedFilterEchoCancellation;  // googEchoCancellation2
-  LIB_WEBRTC_API static const char* kDAEchoCancellation;            // googDAEchoCancellation
+  // LIB_WEBRTC_API static const char* kExtendedFilterEchoCancellation;  // googEchoCancellation2
+  // LIB_WEBRTC_API static const char* kDAEchoCancellation;            // googDAEchoCancellation
   LIB_WEBRTC_API static const char* kAutoGainControl;               // googAutoGainControl
   LIB_WEBRTC_API static const char* kExperimentalAutoGainControl;   // googAutoGainControl2
   LIB_WEBRTC_API static const char* kNoiseSuppression;              // googNoiseSuppression

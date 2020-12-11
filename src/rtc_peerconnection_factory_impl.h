@@ -5,14 +5,18 @@
 #include "rtc_peerconnection.h"
 #include "rtc_peerconnection_factory.h"
 #include "rtc_video_device_impl.h"
+#include "rtc_desktop_device_impl.h"
 
 #include "api/media_stream_interface.h"
 #include "api/peer_connection_interface.h"
 #include "rtc_base/thread.h"
 
+#include "modules/audio_device/include/audio_device_data_observer.h"
+#include "rtc_audio_sink_adapter.h"
+#include "api/audio/audio_mixer.h"
 namespace libwebrtc {
 
-class RTCPeerConnectionFactoryImpl : public RTCPeerConnectionFactory {
+class RTCPeerConnectionFactoryImpl : public RTCPeerConnectionFactory  {
  public:
   RTCPeerConnectionFactoryImpl(rtc::Thread* worker_thread,
                                rtc::Thread* signaling_thread,
@@ -34,6 +38,10 @@ class RTCPeerConnectionFactoryImpl : public RTCPeerConnectionFactory {
 
   scoped_refptr<RTCVideoDevice> GetVideoDevice() override;
 
+   scoped_refptr<RTCDesktopDevice> GetDesktopDevice() override;
+
+
+
   virtual scoped_refptr<RTCAudioSource> CreateAudioSource(
       const char* audio_source_label) override;
 
@@ -53,6 +61,8 @@ class RTCPeerConnectionFactoryImpl : public RTCPeerConnectionFactory {
   virtual scoped_refptr<RTCMediaStream> CreateStream(
       const char* stream_id) override;
 
+  virtual scoped_refptr<RTCAudioMixer> CreateAudioMixer() override;
+
   rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface>
   peer_connection_factory() {
     return rtc_peerconnection_factory_;
@@ -68,6 +78,7 @@ class RTCPeerConnectionFactoryImpl : public RTCPeerConnectionFactory {
       const char* video_source_label,
       scoped_refptr<RTCMediaConstraints> constraints);
 
+
  private:
   rtc::Thread* worker_thread_ = nullptr;
   rtc::Thread* signaling_thread_ = nullptr;
@@ -77,7 +88,9 @@ class RTCPeerConnectionFactoryImpl : public RTCPeerConnectionFactory {
   rtc::scoped_refptr<webrtc::AudioDeviceModule> audio_device_module_;
   scoped_refptr<AudioDeviceImpl> audio_device_impl_;
   scoped_refptr<RTCVideoDeviceImpl> video_device_impl_;
+  scoped_refptr<DesktopDeviceImpl> desktop_device_impl_;
   std::list<scoped_refptr<RTCPeerConnection>> peerconnections_;
+  scoped_refptr<AudioTrackImpl> audio_track_impl_;
 };
 
 } // namespace libwebrtc

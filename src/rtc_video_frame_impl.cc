@@ -5,7 +5,8 @@
 #include "api/video/i420_buffer.h"
 #include "libyuv/convert_argb.h"
 #include "libyuv/convert_from.h"
-
+#include "libyuv/convert.h"
+#include "libyuv/scale.h"
 namespace libwebrtc {
 
 VideoFrameBufferImpl::VideoFrameBufferImpl(
@@ -164,5 +165,46 @@ scoped_refptr<RTCVideoFrame> RTCVideoFrame::Create(int width,
           new RefCountedObject<VideoFrameBufferImpl>(i420_buffer));
   return frame;
 }
+
+scoped_refptr<RTCVideoFrame>  VideoFrameBufferImpl::CropAndScaleFrom(scoped_refptr<RTCVideoFrame> src,
+                        int offset_x,
+                        int offset_y,
+                        int crop_width,
+                        int crop_height) {
+
+                        
+  //  rtc::scoped_refptr<webrtc::I420Buffer> srci420 =
+  // webrtc::I420Buffer::Copy(src->width(),src->height(),src->DataY(),src->StrideY(),src->DataU(),src->StrideU(),src->DataV(),src->StrideV());
+  //     dsti420->CropAndScaleFrom(*srci420,offset_x,offset_y,crop_width,crop_height);
+
+   
+
+
+   rtc::scoped_refptr<webrtc::I420Buffer> scale_src=webrtc::I420Buffer::Create(crop_width,crop_height);
+   
+      libyuv::I420Scale(src->DataY(),  src->StrideY(), src->DataU(), src->StrideU(), src->DataV(), src->StrideV(),
+       src->width(), src->height(), scale_src->MutableDataY(),
+                        scale_src->StrideY(), scale_src->MutableDataU(), scale_src->StrideU(), scale_src->MutableDataV(),
+                        scale_src->StrideV(), scale_src->width(), scale_src->height(), libyuv::kFilterBox);
+
+ libyuv::CopyPlane(scale_src->DataY(), scale_src->StrideY(),
+                    (uint8_t *)DataY() + StrideY() * offset_x + offset_y,
+                    StrideY(), crop_width, crop_height);
+
+  libyuv::CopyPlane(
+      scale_src->DataU(), scale_src->StrideU(),
+      (uint8_t *)DataU() + StrideU() * offset_x / 2 + offset_y / 2, StrideU(),
+     crop_width / 2, crop_height / 2);
+
+libyuv::CopyPlane(
+      scale_src->DataV(), scale_src->StrideV(),
+      (uint8_t *)DataV() + StrideV() * offset_x / 2 + offset_y / 2, StrideV(),
+     crop_width / 2, crop_height / 2);
+
+      scoped_refptr<VideoFrameBufferImpl> frame =
+      scoped_refptr<VideoFrameBufferImpl>(
+          new RefCountedObject<VideoFrameBufferImpl>(scale_src));
+  return frame;
+                        }
 
 } // namespace libwebrtc

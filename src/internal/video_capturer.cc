@@ -71,8 +71,9 @@ void VideoCapturer::RemoveSink(rtc::VideoSinkInterface<VideoFrame>* sink) {
 
 void VideoCapturer::UpdateVideoAdapter() {
   rtc::VideoSinkWants wants = broadcaster_.wants();
-  video_adapter_.OnResolutionFramerateRequest(
-      wants.target_pixel_count, wants.max_pixel_count, wants.max_framerate_fps);
+  // video_adapter_.OnResolutionFramerateRequest(
+  //     wants.target_pixel_count, wants.max_pixel_count, wants.max_framerate_fps);
+  video_adapter_.OnSinkWants(wants);
 }
 
 }  // namespace internal

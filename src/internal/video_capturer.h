@@ -37,11 +37,11 @@ class VideoCapturer : public rtc::VideoSourceInterface<VideoFrame> {
  protected:
   void OnFrame(const VideoFrame& frame);
   rtc::VideoSinkWants GetSinkWants();
-
+rtc::VideoBroadcaster broadcaster_;
  private:
   void UpdateVideoAdapter();
 
-  rtc::VideoBroadcaster broadcaster_;
+  
   cricket::VideoAdapter video_adapter_;
 };
 }  // namespace internal

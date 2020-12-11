@@ -61,7 +61,7 @@ bool VcmCapturer::Init(size_t width,
   return true;
 }
 
-VcmCapturer* VcmCapturer::Create(size_t width,
+VcmCapturer* VcmCapturer::Create(size_t width, 
                                  size_t height,
                                  size_t target_fps,
                                  size_t capture_device_index) {

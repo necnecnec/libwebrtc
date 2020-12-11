@@ -18,7 +18,7 @@ enum class construct_type {
   move,
   copy_and_move,
 };
-
+namespace libwebrtc{
 namespace details {
 
 // V-table implementation
@@ -55,7 +55,7 @@ struct fixed_function_vtable<construct_type::copy_and_move, Ret, Args...>
 };
 
 }  // namespace details
-
+}//namespace libwebrtc
 template <typename Function,
           size_t MaxSize = 128,
           construct_type ConstructStrategy = construct_type::copy_and_move>
@@ -290,7 +290,7 @@ class fixed_size_function<Ret(Args...), MaxSize, ConstructStrategy> {
 
  private:
   using vtable =
-      details::fixed_function_vtable<ConstructStrategy, Ret, Args...>;
+     libwebrtc::details::fixed_function_vtable<ConstructStrategy, Ret, Args...>;
   static const size_t StorageSize = MaxSize - sizeof(vtable);
   using storage = typename std::aligned_storage<StorageSize>::type;
 

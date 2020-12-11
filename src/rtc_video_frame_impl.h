@@ -42,7 +42,7 @@ class VideoFrameBufferImpl : public RTCVideoFrame {
                     int dst_stride_argb,
                     int dest_width,
                     int dest_height) override;
-
+  
   rtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer() { return buffer_; }
 
   // System monotonic clock, same timebase as rtc::TimeMicros().
@@ -54,7 +54,11 @@ class VideoFrameBufferImpl : public RTCVideoFrame {
   webrtc::VideoRotation rotation() const { return rotation_; }
 
   void set_rotation(webrtc::VideoRotation rotation) { rotation_ = rotation; }
-
+  scoped_refptr<RTCVideoFrame> CropAndScaleFrom(scoped_refptr<RTCVideoFrame> src,
+                        int offset_x,
+                        int offset_y,
+                        int crop_width,
+                        int crop_height) override;
  private:
   rtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer_;
   int64_t timestamp_us_ = 0;

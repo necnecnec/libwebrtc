@@ -118,9 +118,9 @@ class SetSessionDescriptionObserverProxy
     RTC_LOG(INFO) << __FUNCTION__;
     success_callback_();
   }
-  virtual void OnFailure(const std::string& error) {
-    RTC_LOG(INFO) << __FUNCTION__ << " " << error;
-    failure_callback_(error.c_str());
+  virtual void OnFailure(webrtc::RTCError error) {
+    RTC_LOG(INFO) << __FUNCTION__ << " " << error.message();
+    failure_callback_(error.message());
   }
 
  protected:
@@ -158,8 +158,8 @@ class CreateSessionDescriptionObserverProxy
     success_callback_(sdp.c_str(), type.c_str());
   }
 
-  virtual void OnFailure(const std::string& error) {
-    failure_callback_(error.c_str());
+  virtual void OnFailure(webrtc::RTCError error) {
+    failure_callback_(error.message());
   }
 
  private:
@@ -175,7 +175,7 @@ RTCPeerConnectionImpl::RTCPeerConnectionImpl(
     : rtc_peerconnection_factory_(peer_connection_factory),
       configuration_(configuration),
       constraints_(constraints),
-      callback_crt_sec_(new rtc::CriticalSection()) {
+      callback_crt_sec_(new rtc::RecursiveCriticalSection()) {
   RTC_LOG(INFO) << __FUNCTION__ << ": ctor";
   Initialize();
 }
@@ -272,7 +272,7 @@ void RTCPeerConnectionImpl::AddCandidate(const char* mid,
   webrtc::SdpParseError error;
   webrtc::IceCandidateInterface* candidate =
       webrtc::CreateIceCandidate(mid, midx, candiate, &error);
-  if (!candidate)
+  if (candidate)
     rtc_peerconnection_->AddIceCandidate(candidate);
 }
 
@@ -438,14 +438,14 @@ void RTCPeerConnectionImpl::SetRemoteDescription(const char* sdp,
     return;
   }
 
-  cricket::ContentDescription* content_desc =
-      session_description->description()->GetContentDescriptionByName("video");
-  cricket::MediaContentDescription* media_content_desc =
-      (cricket::MediaContentDescription*)content_desc;
+  // cricket::ContentDescription* content_desc =
+  //     session_description->description()->GetContentDescriptionByName("video");
+  // cricket::MediaContentDescription* media_content_desc =
+  //     (cricket::MediaContentDescription*)content_desc;
 
-  if (media_content_desc && configuration_.local_video_bandwidth > 0)
-    media_content_desc->set_bandwidth(configuration_.local_video_bandwidth *
-                                      1000);
+  // if (media_content_desc && configuration_.local_video_bandwidth > 0)
+  //   media_content_desc->set_bandwidth(configuration_.local_video_bandwidth *
+  //                                     1000);
 
   rtc_peerconnection_->SetRemoteDescription(
       SetSessionDescriptionObserverProxy::Create(success, failure),
@@ -467,7 +467,7 @@ void RTCPeerConnectionImpl::CreateOffer(
   RTCMediaConstraintsImpl* media_constraints =
       static_cast<RTCMediaConstraintsImpl*>(constraints.get());
   webrtc::PeerConnectionInterface::RTCOfferAnswerOptions offer_answer_options;
-  if (CopyConstraintsIntoOfferAnswerOptions(
+  if (media_constraints==nullptr||CopyConstraintsIntoOfferAnswerOptions(
           media_constraints, &offer_answer_options) ==
       false) {
     offer_answer_options = offer_answer_options_;
@@ -490,7 +490,7 @@ void RTCPeerConnectionImpl::CreateAnswer(
   RTCMediaConstraintsImpl* media_constraints =
       static_cast<RTCMediaConstraintsImpl*>(constraints.get());
   webrtc::PeerConnectionInterface::RTCOfferAnswerOptions offer_answer_options;
-  if (CopyConstraintsIntoOfferAnswerOptions(
+  if (media_constraints==nullptr||CopyConstraintsIntoOfferAnswerOptions(
           media_constraints, &offer_answer_options) ==
       false) {
     offer_answer_options = offer_answer_options_;

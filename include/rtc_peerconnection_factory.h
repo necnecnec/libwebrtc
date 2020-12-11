@@ -9,7 +9,8 @@
 #include "rtc_mediaconstraints.h"
 #include "rtc_video_source.h"
 #include "rtc_video_device.h"
-
+#include "rtc_desktop_device.h"
+#include "rtc_audio_mixer.h"
 namespace libwebrtc {
 
 class RTCPeerConnection;
@@ -32,6 +33,8 @@ class RTCPeerConnectionFactory : public RefCountInterface {
 
   virtual scoped_refptr<RTCVideoDevice> GetVideoDevice() = 0;
 
+  virtual scoped_refptr<RTCDesktopDevice> GetDesktopDevice() = 0;
+
   virtual scoped_refptr<RTCAudioSource> CreateAudioSource(
       const char* audio_source_label) = 0;
 
@@ -49,6 +52,7 @@ class RTCPeerConnectionFactory : public RefCountInterface {
       const char* track_id) = 0;
 
   virtual scoped_refptr<RTCMediaStream> CreateStream(const char* stream_id) = 0;
+  virtual scoped_refptr<RTCAudioMixer> CreateAudioMixer() = 0;
 };
 
 } // namespace libwebrtc

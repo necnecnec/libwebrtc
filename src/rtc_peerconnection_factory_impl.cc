@@ -15,9 +15,13 @@
 #include "modules/audio_device/audio_device_impl.h"
 #include "rtc_base/bind.h"
 
+#include "api/task_queue/default_task_queue_factory.h"
+
 #if defined(WEBRTC_IOS)
 #include "engine/sdk/objc/Framework/Classes/videotoolboxvideocodecfactory.h"
 #endif
+
+#include "rtc_audio_mixer_impl.h"
 
 namespace libwebrtc {
 
@@ -42,7 +46,7 @@ bool RTCPeerConnectionFactoryImpl::Initialize() {
   if (!rtc_peerconnection_factory_) {
     rtc_peerconnection_factory_ = webrtc::CreatePeerConnectionFactory(
         network_thread_, worker_thread_, signaling_thread_,
-        audio_device_module_.get(), webrtc::CreateBuiltinAudioEncoderFactory(),
+        audio_device_module_, webrtc::CreateBuiltinAudioEncoderFactory(),
         webrtc::CreateBuiltinAudioDecoderFactory(),
         webrtc::CreateBuiltinVideoEncoderFactory(),
         webrtc::CreateBuiltinVideoDecoderFactory(), nullptr, nullptr);
@@ -71,8 +75,14 @@ bool RTCPeerConnectionFactoryImpl::Terminate() {
 }
 
 void RTCPeerConnectionFactoryImpl::CreateAudioDeviceModule_w() {
-  if (!audio_device_module_)
-    audio_device_module_ = webrtc::AudioDeviceModule::Create(webrtc::AudioDeviceModule::kPlatformDefaultAudio, nullptr);
+  if (!audio_device_module_){
+    audio_device_module_ = webrtc::AudioDeviceModule::Create(webrtc::AudioDeviceModule::kPlatformDefaultAudio, webrtc::CreateDefaultTaskQueueFactory().get());
+//audio_device_module_->EnableBuiltInAEC(false);
+
+   audio_track_impl_  = scoped_refptr<AudioTrackImpl>(
+      new RefCountedObject<AudioTrackImpl>(nullptr));
+    audio_device_module_=CreateAudioDeviceWithDataObserver(audio_device_module_,std::make_unique<AudioSinkAdapterImpl>(audio_track_impl_.get()));
+  }
 }
 
 void RTCPeerConnectionFactoryImpl::DestroyAudioDeviceModule_w() {
@@ -125,10 +135,21 @@ scoped_refptr<RTCVideoDevice> RTCPeerConnectionFactoryImpl::GetVideoDevice() {
   return video_device_impl_;
 }
 
+scoped_refptr<RTCDesktopDevice> RTCPeerConnectionFactoryImpl::GetDesktopDevice(){
+  if (!desktop_device_impl_)
+    desktop_device_impl_ = scoped_refptr<DesktopDeviceImpl>(
+        new RefCountedObject<DesktopDeviceImpl>());
+
+  return desktop_device_impl_;
+}
+
+
 scoped_refptr<RTCAudioSource> RTCPeerConnectionFactoryImpl::CreateAudioSource(
     const char* audio_source_label) {
+      auto options=cricket::AudioOptions();
+     options.echo_cancellation=false;
   rtc::scoped_refptr<webrtc::AudioSourceInterface> rtc_source_track =
-      rtc_peerconnection_factory_->CreateAudioSource(cricket::AudioOptions());
+      rtc_peerconnection_factory_->CreateAudioSource(options);
 
   scoped_refptr<RTCAudioSourceImpl> source = scoped_refptr<RTCAudioSourceImpl>(
       new RefCountedObject<RTCAudioSourceImpl>(rtc_source_track));
@@ -211,10 +232,23 @@ scoped_refptr<RTCAudioTrack> RTCPeerConnectionFactoryImpl::CreateAudioTrack(
   rtc::scoped_refptr<webrtc::AudioTrackInterface> audio_track(
       rtc_peerconnection_factory_->CreateAudioTrack(
           track_id, source_impl->rtc_audio_source()));
+//  rtc::scoped_refptr<webrtc::AudioTrackInterface> audio_track(
+//       rtc_peerconnection_factory_->CreateAudioTrack(
+//           track_id, rtc_peerconnection_factory_->CreateAudioSource(
+//                            cricket::AudioOptions())));
 
-  scoped_refptr<AudioTrackImpl> track = scoped_refptr<AudioTrackImpl>(
-      new RefCountedObject<AudioTrackImpl>(audio_track));
-  return track;
+  audio_track_impl_->set_rtc_track(audio_track);
+ // audio_device_module_=CreateAudioDeviceWithDataObserver(audio_device_module_,track.get());
+ // audio_device_module_->Init();
+ // audio_device_module_->InitPlayout();
+ // audio_device_module_->StartPlayout();
+  return audio_track_impl_;
+}
+
+scoped_refptr<RTCAudioMixer> RTCPeerConnectionFactoryImpl::CreateAudioMixer(){
+  scoped_refptr<RTCAudioMixerImpl> audio_mixer= scoped_refptr<RTCAudioMixerImpl>(
+      new RefCountedObject< RTCAudioMixerImpl>());
+      return audio_mixer;
 }
 
 } // namespace libwebrtc

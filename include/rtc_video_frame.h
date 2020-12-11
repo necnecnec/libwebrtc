@@ -55,7 +55,11 @@ class RTCVideoFrame : public RefCountInterface {
                             int dst_stride_argb,
                             int dest_width,
                             int dest_height) = 0;
-
+  virtual scoped_refptr<RTCVideoFrame> CropAndScaleFrom(scoped_refptr<RTCVideoFrame> src,
+                        int offset_x,
+                        int offset_y,
+                        int crop_width,
+                        int crop_height)=0;
  protected:
   virtual ~RTCVideoFrame() {}
 };

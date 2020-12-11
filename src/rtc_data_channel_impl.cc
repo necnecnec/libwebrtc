@@ -5,7 +5,7 @@ namespace libwebrtc {
 RTCDataChannelImpl::RTCDataChannelImpl(
     rtc::scoped_refptr<webrtc::DataChannelInterface> rtc_data_channel)
     : rtc_data_channel_(rtc_data_channel),
-      crit_sect_(new rtc::CriticalSection()) {
+      crit_sect_(new rtc::RecursiveCriticalSection()) {
   rtc_data_channel_->RegisterObserver(this);
   strncpy(label_, rtc_data_channel_->label().data(), sizeof(label_));
 }
