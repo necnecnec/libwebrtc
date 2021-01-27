@@ -30,7 +30,7 @@ class BasicScreenCapturer::BasicScreenCaptureThread
         rtc::MessageHandler(false),
         capturer_(capturer),
         finished_(false) {
-    waiting_time_ms_ = 1000 / 30;  // For basic capturer, fix it to 30fps
+    waiting_time_ms_ = 1000 / capturer_->fps_;  // For basic capturer, fix it to 30fps
   }
 
   virtual ~BasicScreenCaptureThread() { Stop(); }
@@ -75,6 +75,7 @@ BasicScreenCapturer::BasicScreenCapturer(webrtc::DesktopCaptureOptions options)
     : screen_capture_thread_(nullptr),
       width_(0),
       height_(0),
+      fps_(30),
       frame_buffer_capacity_(0),
       frame_buffer_(nullptr),
       screen_capture_options_(options) {
@@ -97,6 +98,7 @@ int32_t BasicScreenCapturer::StartCapture(
     RTC_LOG(LS_ERROR) << "Desktop capturer creation failed, not able to start it";
     return -1;
   }
+  fps_=capabilit.maxFPS;
   screen_capturer_->Start(this);
 
   screen_capture_thread_.reset(new BasicScreenCaptureThread(this));
@@ -133,7 +135,7 @@ int32_t BasicScreenCapturer::CaptureSettings(
     webrtc::VideoCaptureCapability& settings) {
   settings.width = width_;
   settings.height = height_;
-  settings.maxFPS = 30;  // We should not hardcode it.
+  settings.maxFPS = fps_;  // We should not hardcode it.
   settings.videoType = webrtc::VideoType::kI420;
 
   return 0;

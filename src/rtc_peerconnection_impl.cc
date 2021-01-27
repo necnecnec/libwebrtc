@@ -506,17 +506,18 @@ void RTCPeerConnectionImpl::Close() {
     rtc_peerconnection_ = nullptr;
     data_channel_ = nullptr;
     local_streams_.clear();
-    for (auto stream : remote_streams_) {
-      if (observer_) {
-        observer_->OnRemoveStream(stream);
-      }
-      for (auto track : stream->GetAudioTracks()) {
-        observer_->OnRemoveTrack(stream, track);
-      }
-      for (auto track : stream->GetVideoTracks()) {
-        observer_->OnRemoveTrack(stream, track);
-      }
-    }
+    RTC_LOG(INFO) << remote_streams_.size();
+    // for (auto stream : remote_streams_) {
+    //   if (observer_) {
+    //     observer_->OnRemoveStream(stream);
+    //   }
+    //   for (auto track : stream->GetAudioTracks()) {
+    //     observer_->OnRemoveTrack(stream, track);
+    //   }
+    //   for (auto track : stream->GetVideoTracks()) {
+    //     observer_->OnRemoveTrack(stream, track);
+    //   }
+    // }
     remote_streams_.clear();
   }
 }

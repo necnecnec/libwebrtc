@@ -28,19 +28,43 @@ int32_t RTCVideoDeviceImpl::GetDeviceName(
 
   if (device_info_->GetDeviceName(deviceNumber, deviceNameUTF8,
                                   deviceNameLength, deviceUniqueIdUTF8,
-                                  productUniqueIdUTF8Length) != -1) {
+                                  deviceUniqueIdUTF8Length) != -1) {
     return 0;
   }
   return 0;
 }
 
 scoped_refptr<RTCVideoCapturer> RTCVideoDeviceImpl::Create(const char* name,
-                                                   uint32_t index) {
+                                                           uint32_t index,int32_t width,int32_t height,int32_t fps) {
   scoped_refptr<RTCVideoCapturerImpl> video_capturer =
       scoped_refptr<RTCVideoCapturerImpl>(
-          new RefCountedObject<RTCVideoCapturerImpl>(
-              absl::WrapUnique(webrtc::internal::VcmCapturer::Create(640,480,30, index))));
+          new RefCountedObject<RTCVideoCapturerImpl>(absl::WrapUnique(
+              webrtc::internal::VcmCapturer::Create(width, height, fps, index))));
   return video_capturer;
 }
 
-} // namespace libwebrtc
+int32_t RTCVideoDeviceImpl::NumberOfCapabilities(
+    const char* deviceUniqueIdUTF8) {
+  if (!device_info_) {
+    return -1;
+  }
+
+  return device_info_->NumberOfCapabilities(deviceUniqueIdUTF8);
+}
+int32_t RTCVideoDeviceImpl::GetCapability(const char* deviceUniqueIdUTF8,
+                                          const uint32_t deviceCapabilityNumber,
+                                          int32_t& width,
+                                          int32_t& height,
+                                          int32_t& fps) {
+  if (!device_info_) {
+    return -1;
+  }
+  webrtc::VideoCaptureCapability capability;
+  device_info_->GetCapability(deviceUniqueIdUTF8, deviceCapabilityNumber,
+                              capability);
+  width = capability.width;
+  height = capability.height;
+  fps = capability.maxFPS;
+  return 0;
+}
+}  // namespace libwebrtc

@@ -35,6 +35,7 @@ BasicWindowCapturer::BasicWindowCapturer(
     std::unique_ptr<LocalScreenStreamObserver> observer)
     : width_(0),
       height_(0),
+      fps_(30),
       frame_buffer_capacity_(0),
       frame_buffer_(nullptr),
       window_capture_options_(options),
@@ -78,7 +79,7 @@ bool BasicWindowCapturer::CaptureThreadProcess() {
     }
     lock_.Leave();
     int64_t cost_ms = clock_->CurrentNtpInMilliseconds() - current_time;
-    need_sleep_ms_ = 33 - cost_ms;
+    need_sleep_ms_ = 1000/fps_ - cost_ms;
     if (need_sleep_ms_ > 0) {
       current_time = clock_->CurrentNtpInMilliseconds();
       webrtc::SleepMs(need_sleep_ms_);
@@ -102,7 +103,9 @@ void BasicWindowCapturer::InitOnWorkerThread() {
 
 int32_t BasicWindowCapturer::StartCapture(
     const webrtc::VideoCaptureCapability& capabilit) {
+      fps_=capabilit.maxFPS;
   if (capture_started_) {
+    
     RTC_LOG(LS_INFO) << "Window Captureerer is already running.";
     return 0;
   }
@@ -119,11 +122,15 @@ int32_t BasicWindowCapturer::StartCapture(
     int window_id;
     
     if (GetCurrentWindowList(&window_map)) {
-      std::unordered_map<int,const char*> window_map_char;
+      std::string title_list="";
+      std::string handle_list=""; 
+     // std::unordered_map<int,const char*> window_map_char;
          for ( auto it = window_map.begin(); it != window_map.end(); ++it ){
-           window_map_char[it->first]=it->second.c_str();
+           title_list+=(it->second+"|");
+           handle_list+=(std::to_string (it->first)+"|");
+         //  window_map_char[it->first]=it->second.c_str();
          }
-      observer_->OnCaptureSourceNeeded(window_map_char, window_id);
+      observer_->OnCaptureSourceNeeded(title_list.c_str(),handle_list.c_str(), window_id);
       SetCaptureWindow(window_id);
     }
   }
@@ -147,12 +154,13 @@ int32_t BasicWindowCapturer::StopCapture() {
 }
 
 void BasicWindowCapturer::StopOnWorkerThread() {
+  capture_started_ = false;
   if (capture_thread_) {
     stopped_ = true;
     capture_thread_->Stop();
     capture_thread_.reset();
   }
-  capture_started_ = false;
+  
 }
 
 bool BasicWindowCapturer::CaptureStarted() {

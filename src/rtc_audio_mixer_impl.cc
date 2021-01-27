@@ -55,16 +55,75 @@ class AudioMixerSource : public AudioMixer::Source,public RTCAudioRenderer {
   PushResampler<int16_t> capture_resampler_;
 };
 
+///////////////////////////////////////////////////////////////////////
+// Definition of private class BasicScreenCaptureThread that periodically
+// generates frames.
+///////////////////////////////////////////////////////////////////////
+class RTCAudioMixerImpl::MixCaptureThread
+    : public rtc::Thread,
+      public rtc::MessageHandler {
+ public:
+  explicit MixCaptureThread(RTCAudioMixerImpl* capturer)
+      : rtc::Thread(rtc::SocketServer::CreateDefault()),
+        rtc::MessageHandler(false),
+        capturer_(capturer),
+        finished_(false) {
+    waiting_time_ms_ = 10;  // webrtc capture audio every 10ms
+  }
 
+  virtual ~MixCaptureThread() { Stop(); }
+  // Override virtual method of parent Thread. Context: Worker Thread.
+  virtual void Run() {
+    // Read the first frame and start the message pump. The pump runs until
+    // Stop() is called externally or Quit() is called by OnMessage().
+    if (capturer_) {
+      capturer_->CaptureMixFrame();
+      rtc::Thread::Current()->Post(RTC_FROM_HERE, this);
+      rtc::Thread::Current()->ProcessMessages(kForever);
+    }
+    rtc::CritScope cs(&crit_);
+    finished_ = true;
+  }
+  // Override virtual method of parent MessageHandler. Context: Worker Thread.
+  virtual void OnMessage(rtc::Message* /*pmsg*/) {
+    if (capturer_) {
+      capturer_->CaptureMixFrame();
+      rtc::Thread::Current()->PostDelayed(RTC_FROM_HERE, waiting_time_ms_,
+                                          this);
+    } else {
+      rtc::Thread::Current()->Quit();
+    }
+  }
+  // Check if Run() is finished.
+  bool Finished() const {
+    rtc::CritScope cs(&crit_);
+    return finished_;
+  }
+ private:
+  RTCAudioMixerImpl* capturer_;
+  mutable rtc::RecursiveCriticalSection crit_;
+  bool finished_;
+  int waiting_time_ms_;
+  RTC_DISALLOW_COPY_AND_ASSIGN(MixCaptureThread);
+};
 
 RTCAudioMixerImpl::RTCAudioMixerImpl()
     {
        rtc_audio_mixer_= AudioMixerImpl::Create();
       audioFrame.mutable_data();
+     mixCaptureThread_.reset(new MixCaptureThread(this));
+  bool ret = mixCaptureThread_->Start();
+  if (!ret) {
+    RTC_LOG(LS_ERROR) << "Mix audio capture thread failed to start";
+  }
   RTC_LOG(INFO) << __FUNCTION__ << ": ctor ";
 }
 
 RTCAudioMixerImpl::~RTCAudioMixerImpl() {
+  if (mixCaptureThread_) {
+    mixCaptureThread_->Quit();
+    mixCaptureThread_.reset();
+  }
   RTC_LOG(INFO) << __FUNCTION__ << ": dtor ";
 }
 
@@ -95,10 +154,18 @@ char*  RTCAudioMixerImpl::Mix(
  audioFrame.num_channels_=number_of_channels;
       audioFrame.sample_rate_hz_=sample_rate;
       audioFrame.samples_per_channel_=number_of_frame;
-  rtc_audio_mixer_->Mix(number_of_channels,&mixFrame);
-  if(mixFrame.muted()) return nullptr;
+ // rtc_audio_mixer_->Mix(number_of_channels,&mixFrame);
+  if(!have_new_frame ) return nullptr;
   voe::RemixAndResample(mixFrame,&mix_resampler_,&audioFrame);
-  
+  have_new_frame=false;
   return (char *)audioFrame.data();
 }
+
+void  RTCAudioMixerImpl::CaptureMixFrame(){
+  
+  rtc_audio_mixer_->Mix(2,&mixFrame);
+have_new_frame=true;
+
+}
+
 } // namespace libwebrtc

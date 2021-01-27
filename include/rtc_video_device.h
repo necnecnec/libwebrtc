@@ -21,8 +21,11 @@ class RTCVideoDevice : public RefCountInterface {
                                 uint32_t deviceUniqueIdUTF8Length,
                                 char* productUniqueIdUTF8 = 0,
                                 uint32_t productUniqueIdUTF8Length = 0) = 0;
-
-  virtual scoped_refptr<RTCVideoCapturer> Create(const char* name, uint32_t index) = 0;
+  virtual int32_t NumberOfCapabilities(const char* deviceUniqueIdUTF8)= 0;
+  virtual int32_t GetCapability(const char* deviceUniqueIdUTF8,
+                                  const uint32_t deviceCapabilityNumber,
+                                  int32_t& width,int32_t& height,int32_t& fps)= 0;
+  virtual scoped_refptr<RTCVideoCapturer> Create(const char* name, uint32_t index,int32_t width,int32_t height,int32_t fps) = 0;
 
  protected:
   virtual ~RTCVideoDevice() {}

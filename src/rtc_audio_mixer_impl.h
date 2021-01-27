@@ -19,6 +19,11 @@
 #include "rtc_base/deprecated/recursive_critical_section.h"
 
 #include "common_audio/resampler/include/push_resampler.h"
+
+#include "rtc_base/bind.h"
+#include "rtc_base/deprecated/recursive_critical_section.h"
+#include "rtc_base/thread.h"
+
 namespace libwebrtc {
 class AudioMixerSource;
 class RTCAudioMixerImpl : public RTCAudioMixer {
@@ -40,12 +45,17 @@ class RTCAudioMixerImpl : public RTCAudioMixer {
         int sample_rate,
         int number_of_channels,
         int number_of_frame) override;
+
+  void  CaptureMixFrame();
  private:
+ class MixCaptureThread;  // Forward declaration, defined in .cc.
   rtc::scoped_refptr<webrtc::AudioMixerImpl> rtc_audio_mixer_;
   std::map<scoped_refptr<RTCAudioTrack>,AudioMixerSource*> track_map_;
   webrtc::AudioFrame audioFrame;
   webrtc::AudioFrame mixFrame;
   webrtc::PushResampler<int16_t> mix_resampler_;
+  std::unique_ptr<MixCaptureThread> mixCaptureThread_;
+  bool have_new_frame = false;
 };
 
 } // namespace libwebrtc

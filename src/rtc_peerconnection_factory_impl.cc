@@ -61,9 +61,10 @@ bool RTCPeerConnectionFactoryImpl::Initialize() {
 }
 
 bool RTCPeerConnectionFactoryImpl::Terminate() {
+  peerconnections_.clear();
   audio_device_impl_ = nullptr;
   video_device_impl_ = nullptr;
-  rtc_peerconnection_factory_ = NULL;
+  rtc_peerconnection_factory_ = nullptr;
   if (audio_device_module_) {
     worker_thread_->Invoke<void>(
         RTC_FROM_HERE,
@@ -77,7 +78,7 @@ bool RTCPeerConnectionFactoryImpl::Terminate() {
 void RTCPeerConnectionFactoryImpl::CreateAudioDeviceModule_w() {
   if (!audio_device_module_){
     audio_device_module_ = webrtc::AudioDeviceModule::Create(webrtc::AudioDeviceModule::kPlatformDefaultAudio, webrtc::CreateDefaultTaskQueueFactory().get());
-//audio_device_module_->EnableBuiltInAEC(false);
+ //audio_device_module_->EnableBuiltInAEC(false);
 
    audio_track_impl_  = scoped_refptr<AudioTrackImpl>(
       new RefCountedObject<AudioTrackImpl>(nullptr));
@@ -239,9 +240,11 @@ scoped_refptr<RTCAudioTrack> RTCPeerConnectionFactoryImpl::CreateAudioTrack(
 
   audio_track_impl_->set_rtc_track(audio_track);
  // audio_device_module_=CreateAudioDeviceWithDataObserver(audio_device_module_,track.get());
- // audio_device_module_->Init();
- // audio_device_module_->InitPlayout();
- // audio_device_module_->StartPlayout();
+  audio_device_module_->Init();
+  audio_device_module_->InitPlayout();
+ audio_device_module_->StartPlayout();
+ audio_device_module_->InitRecording();
+ audio_device_module_->StartRecording();
   return audio_track_impl_;
 }
 
